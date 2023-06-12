@@ -34,6 +34,7 @@ namespace HR.LeaveManagement.Api.Controllers
 
         // GET api/<LeaveTypesController>/5
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<LeaveTypeDto>> Get(int id)
         {
             var leaveType = await _mediator.Send(new GetLeaveTypeDetailRequest { Id = id });
