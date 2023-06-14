@@ -21,6 +21,7 @@ namespace HR.LeaveManagement.MVC.Services
 
         public async Task ApproveLeaveRequest(int id, bool approved)
         {
+            AddBearerToken();
             try
             {
                 var request = new ChangeLeaveRequestApprovalDto { Approved = approved, Id = id };
@@ -45,7 +46,7 @@ namespace HR.LeaveManagement.MVC.Services
                     LeaveTypeId = leaveRequest.LeaveTypeId,
                     RequestComments = leaveRequest.RequestComments
                 };
-
+                AddBearerToken();
                 var apiResponse = await _client.LeaveRequestsPOSTAsync(createLeaveRequest);
                 if (apiResponse.Success)
                 {
@@ -74,13 +75,133 @@ namespace HR.LeaveManagement.MVC.Services
 
         public async Task<LeaveRequestVM> GetLeaveRequest(int id)
         {
+            AddBearerToken();
             var leaveRequest = await _client.LeaveRequestsGETAsync(id);
             return new LeaveRequestVM()
             {
                 Id = leaveRequest.Id,
-                StartDate = leaveRequest.StartDate.UtcDateTime,
-                EndDate = leaveRequest.EndDate.UtcDateTime,
+                StartDate = leaveRequest.StartDate.DateTime,
+                EndDate = leaveRequest.EndDate.DateTime,
+                DateRequested = leaveRequest.DateRequested.DateTime,
+                DateActioned = leaveRequest.DateActioned?.DateTime,
+                Approved = leaveRequest.Approved,
+                Cancelled = leaveRequest.Cancelled,
+                RequestComments = leaveRequest.RequestComments,
+                LeaveTypeId = leaveRequest.LeaveTypeId,
+                LeaveType = new LeaveTypeVM()
+                {
+                    Id = leaveRequest.LeaveType.Id,
+                    Name = leaveRequest.LeaveType.Name,
+                    DefaultDays = leaveRequest.LeaveType.DefaultDays
+                },
+                Employee = new EmployeeVM()
+                {
+                    Id = leaveRequest.Employee.Id,
+                    Email = leaveRequest.Employee.Email,
+                    Firstname = leaveRequest.Employee.Firstname,
+                    Lastname = leaveRequest.Employee.Lastname
+                }
             };
+        }
+
+        public async Task<AdminLeaveRequestViewVM> GetAdminLeaveRequestList()
+        {
+            AddBearerToken();
+            var leaveRequests = await _client.LeaveRequestsAllAsync(isLoggedInUser: false);
+
+            var model = new AdminLeaveRequestViewVM
+            {
+                TotalRequests = leaveRequests.Count(),
+                ApprovedRequests = leaveRequests.Count(q => q.Approved == true),
+                PendingRequests = leaveRequests.Count(q => q.Approved == null),
+                RejectedRequests = leaveRequests.Count(q => q.Approved == false),
+                LeaveRequests = new List<LeaveRequestVM>()
+            };
+
+            foreach (var leaveRequestListDto in leaveRequests)
+            {
+                var leaveRequest = new LeaveRequestVM()
+                {
+                    Id = leaveRequestListDto.Id,
+                    DateRequested = leaveRequestListDto.DateRequested.DateTime,
+                    Approved = leaveRequestListDto.Approved,
+                    StartDate = leaveRequestListDto.StartDate.DateTime,
+                    EndDate = leaveRequestListDto.EndDate.DateTime,
+                    LeaveType = new LeaveTypeVM()
+                    {
+                        Id = leaveRequestListDto.LeaveType.Id,
+                        Name = leaveRequestListDto.LeaveType.Name,
+                        DefaultDays = leaveRequestListDto.LeaveType.DefaultDays
+                    },
+                    Employee = new EmployeeVM()
+                    {
+                        Id = leaveRequestListDto.Employee.Id,
+                        Email = leaveRequestListDto.Employee.Email,
+                        Firstname = leaveRequestListDto.Employee.Firstname,
+                        Lastname = leaveRequestListDto.Employee.Lastname
+                    }
+                };
+                model.LeaveRequests.Add(leaveRequest);
+            }
+            return model;
+        }
+
+        public async Task<EmployeeLeaveRequestViewVM> GetUserLeaveRequests()
+        {
+            AddBearerToken();
+            var leaveRequests = await _client.LeaveRequestsAllAsync(isLoggedInUser: true);
+            var allocations = await _client.LeaveAllocationsAllAsync(isLoggedInUser: true);
+            var model = new EmployeeLeaveRequestViewVM
+            {
+                LeaveAllocations = new List<LeaveAllocationVM>(),
+                LeaveRequests = new List<LeaveRequestVM>()
+            };
+
+            foreach (var leaveAllocationDto in allocations)
+            {
+                var leaveAllocation = new LeaveAllocationVM()
+                {
+                    Id = leaveAllocationDto.Id,
+                    LeaveTypeId = leaveAllocationDto.LeaveTypeId,
+                    LeaveType = new LeaveTypeVM()
+                    {
+                        Id = leaveAllocationDto.LeaveType.Id,
+                        Name = leaveAllocationDto.LeaveType.Name,
+                        DefaultDays = leaveAllocationDto.LeaveType.DefaultDays,
+                    },
+                    NumberOfDays = leaveAllocationDto.NumberOfDays,
+                    Period = leaveAllocationDto.Period
+                };
+                model.LeaveAllocations.Add(leaveAllocation);
+            }
+
+            foreach (var leaveRequestListDto in leaveRequests)
+            {
+                var leaveRequestVm = new LeaveRequestVM()
+                {
+                    Id = leaveRequestListDto.Id,
+                    DateRequested = leaveRequestListDto.DateRequested.DateTime,
+                    Approved = leaveRequestListDto.Approved,
+                    StartDate = leaveRequestListDto.StartDate.DateTime,
+                    EndDate = leaveRequestListDto.EndDate.DateTime,
+                    LeaveType = new LeaveTypeVM()
+                    {
+                        Id = leaveRequestListDto.LeaveType.Id,
+                        Name = leaveRequestListDto.LeaveType.Name,
+                        DefaultDays = leaveRequestListDto.LeaveType.DefaultDays
+                    },
+                    Employee = new EmployeeVM()
+                    {
+                        Id = leaveRequestListDto.Employee.Id,
+                        Email = leaveRequestListDto.Employee.Email,
+                        Firstname = leaveRequestListDto.Employee.Firstname,
+                        Lastname = leaveRequestListDto.Employee.Lastname
+                    }
+                };
+                model.LeaveRequests.Add(leaveRequestVm);
+            }
+
+            return model;
         }
     }
 }

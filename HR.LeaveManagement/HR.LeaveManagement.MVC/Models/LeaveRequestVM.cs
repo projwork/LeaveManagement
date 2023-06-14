@@ -15,13 +15,14 @@ namespace HR.LeaveManagement.MVC.Models
         public DateTime DateRequested { get; set; }
 
         [Display(Name = "Date Actioned")]
-        public DateTime DateActioned { get; set; }
+        public DateTime? DateActioned { get; set; }
 
         [Display(Name = "Approval State")]
         public bool? Approved { get; set; }
 
         public bool Cancelled { get; set; }
         public LeaveTypeVM LeaveType { get; set; }
+        public EmployeeVM Employee { get; set; }
     }
 
     public class CreateLeaveRequestVM

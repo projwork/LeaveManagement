@@ -24,7 +24,7 @@ namespace HR.LeaveManagement.MVC.Services
             {
                 var response = new Response<int>();
                 CreateLeaveAllocationDto createLeaveAllocation = new() { LeaveTypeId = leaveTypeId };
-                
+                AddBearerToken();
                 var apiResponse = await _client.LeaveAllocationsPOSTAsync(createLeaveAllocation);
                 if (apiResponse.Success)
                 {

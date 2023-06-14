@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HR.LeaveManagement.Application.Contracts.Identity;
 using HR.LeaveManagement.Application.Contracts.Persistence;
 using HR.LeaveManagement.Application.DTOs.LeaveRequest;
 using HR.LeaveManagement.Application.DTOs.LeaveType;
@@ -15,9 +16,12 @@ namespace HR.LeaveManagement.Application.Features.LeaveRequests.Handlers.Queries
     {
         private readonly ILeaveRequestRepository _leaveRequestRepository;
 
-        public GetLeaveRequestDetailRequestHandler(ILeaveRequestRepository leaveRequestRepository)
+        private readonly IUserService _userService;
+
+        public GetLeaveRequestDetailRequestHandler(ILeaveRequestRepository leaveRequestRepository, IUserService userService)
         {
             _leaveRequestRepository = leaveRequestRepository;
+            _userService = userService;
         }
 
         public async Task<LeaveRequestDto> Handle(GetLeaveRequestDetailRequest request, CancellationToken cancellationToken)
@@ -38,12 +42,13 @@ namespace HR.LeaveManagement.Application.Features.LeaveRequests.Handlers.Queries
                         DefaultDays = leaveRequest.LeaveType.DefaultDays
                     },
                 LeaveTypeId = leaveRequest.LeaveTypeId,
-                DateRequested = leaveRequest.DateRequested,
+                DateRequested = leaveRequest.DateCreated,
                 RequestComments = leaveRequest.RequestComments,
                 DateActioned = leaveRequest.DateActioned,
                 Approved = leaveRequest.Approved,
                 Cancelled = leaveRequest.Cancelled
             };
+            leaveRequestDto.Employee = await _userService.GetEmployee(leaveRequest.RequestingEmployeeId);
 
             return leaveRequestDto;
         }
