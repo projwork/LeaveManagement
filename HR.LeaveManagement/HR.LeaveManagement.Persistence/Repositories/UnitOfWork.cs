@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using HR.LeaveManagement.Application.Constants;
 using HR.LeaveManagement.Application.Contracts.Persistence;
 using Microsoft.AspNetCore.Http;
 
@@ -38,9 +39,9 @@ namespace HR.LeaveManagement.Persistence.Repositories
 
         public async Task Save()
         {
-            //var username = _httpContextAccessor.HttpContext.User.FindFirst(CustomClaimTypes.Uid)?.Value;
+            var username = _httpContextAccessor.HttpContext.User.FindFirst(CustomClaimTypes.Uid)?.Value;
 
-            //await _context.SaveChangesAsync(username);
+            await _context.SaveChangesAsync(username);
         }
     }
 }

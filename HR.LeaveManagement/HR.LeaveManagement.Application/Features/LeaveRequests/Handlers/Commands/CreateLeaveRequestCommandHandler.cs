@@ -20,30 +20,26 @@ namespace HR.LeaveManagement.Application.Features.LeaveRequests.Handlers.Command
 {
     public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveRequestCommand, BaseCommandResponse>
     {
-        private readonly ILeaveRequestRepository _leaveRequestRepository;
-        private readonly ILeaveTypeRepository _leaveTypeRepository;
-        private readonly ILeaveAllocationRepository _leaveAllocationRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailSender _emailSender;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CreateLeaveRequestCommandHandler(ILeaveRequestRepository leaveRequestRepository, ILeaveTypeRepository leaveTypeRepository, IEmailSender emailSender, IHttpContextAccessor httpContextAccessor, ILeaveAllocationRepository leaveAllocationRepository)
+        public CreateLeaveRequestCommandHandler(IUnitOfWork unitOfWork, IEmailSender emailSender, IHttpContextAccessor httpContextAccessor, ILeaveAllocationRepository leaveAllocationRepository)
         {
-            _leaveRequestRepository = leaveRequestRepository;
-            _leaveTypeRepository = leaveTypeRepository;
+            this._unitOfWork = unitOfWork;
             _emailSender = emailSender;
             _httpContextAccessor = httpContextAccessor;
-            _leaveAllocationRepository = leaveAllocationRepository;
         }
 
         public async Task<BaseCommandResponse> Handle(CreateLeaveRequestCommand request, CancellationToken cancellationToken)
         {
             var response = new BaseCommandResponse();
-            var validator = new CreateLeaveRequestDtoValidator(_leaveTypeRepository);
+            var validator = new CreateLeaveRequestDtoValidator(_unitOfWork.LeaveTypeRepository);
             var validationResult = await validator.ValidateAsync(request.LeaveRequestDto);
             var userId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(
                 q => q.Type == CustomClaimTypes.Uid)?.Value;
 
-            var allocation = await _leaveAllocationRepository.GetUserAllocations(userId, request.LeaveRequestDto.LeaveTypeId);
+            var allocation = await _unitOfWork.LeaveAllocationRepository.GetUserAllocations(userId, request.LeaveRequestDto.LeaveTypeId);
             
             if (allocation is null)
             {
@@ -77,7 +73,8 @@ namespace HR.LeaveManagement.Application.Features.LeaveRequests.Handlers.Command
                     RequestComments = request.LeaveRequestDto.RequestComments
                 };
 
-                leaveRequest = await _leaveRequestRepository.Add(leaveRequest);
+                leaveRequest = await _unitOfWork.LeaveRequestRepository.Add(leaveRequest);
+                await _unitOfWork.Save();
 
                 response.Success = true;
                 response.Message = "Request Created Successfully";

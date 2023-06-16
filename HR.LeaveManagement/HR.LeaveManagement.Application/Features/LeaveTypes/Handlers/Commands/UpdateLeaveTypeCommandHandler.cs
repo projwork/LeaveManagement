@@ -14,11 +14,11 @@ namespace HR.LeaveManagement.Application.Features.LeaveTypes.Handlers.Commands
 {
     public class UpdateLeaveTypeCommandHandler : IRequestHandler<UpdateLeaveTypeCommand, Unit>
     {
-        private readonly ILeaveTypeRepository _leaveTypeRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public UpdateLeaveTypeCommandHandler(ILeaveTypeRepository leaveTypeRepository)
+        public UpdateLeaveTypeCommandHandler(IUnitOfWork unitOfWork)
         {
-            _leaveTypeRepository = leaveTypeRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<Unit> Handle(UpdateLeaveTypeCommand request, CancellationToken cancellationToken)
@@ -29,7 +29,7 @@ namespace HR.LeaveManagement.Application.Features.LeaveTypes.Handlers.Commands
             if (validationResult.IsValid == false)
                 throw new ValidationException(validationResult);
 
-            var leaveType = await _leaveTypeRepository.Get(request.LeaveTypeDto.Id);
+            var leaveType = await _unitOfWork.LeaveTypeRepository.Get(request.LeaveTypeDto.Id);
 
             if (leaveType is null)
                 throw new NotFoundException(nameof(leaveType), request.LeaveTypeDto.Id);
@@ -38,7 +38,8 @@ namespace HR.LeaveManagement.Application.Features.LeaveTypes.Handlers.Commands
             leaveType.Name = request.LeaveTypeDto.Name;
             leaveType.DefaultDays = request.LeaveTypeDto.DefaultDays;
 
-            await _leaveTypeRepository.Update(leaveType);
+            await _unitOfWork.LeaveTypeRepository.Update(leaveType);
+            await _unitOfWork.Save();
 
             return Unit.Value;
         }
